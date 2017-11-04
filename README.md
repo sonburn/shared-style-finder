@@ -2,7 +2,7 @@
 
 Find instances of a shared layer or text style.
 
-![Shared Style Finder](https://raw.githubusercontent.com/sonburn/shared-style-finder/master/Screenshots/Unused%20Style%20Remover.png)
+![Shared Style Finder](https://raw.githubusercontent.com/sonburn/shared-style-finder/master/Screenshots/Shared%20Style%20Finder.png)
 
 <a href="http://bit.ly/SketchRunnerWebsite">
 	<img width="160" height="41" src="http://bit.ly/RunnerBadgeBlue" alt="runner-badge-blue">
