@@ -1,0 +1,26 @@
+{
+	"author" : "Jason Burns",
+	"commands" : [
+		{
+			"name" : "Shared Style Finder",
+			"shortcut" : "cmd option shift f",
+			"identifier" : "styleFinder",
+			"description" : "Find instances of a shared layer or text style.",
+			"script" : "script.cocoascript",
+			"icon" : "icon-sr.png"
+		}
+	],
+	"menu" : {
+		"title" : "Shared Style Finder",
+		"items" : [
+			"styleFinder"
+		],
+		"isRoot" : true
+	},
+	"identifier" : "com.sonburn.sketchplugins.shared-style-finder",
+	"version" : "0.1",
+	"description" : "Find instances of a shared layer or text style.",
+	"authorEmail" : "jason.burns@synchronoss.com",
+	"name" : "Shared Style Finder",
+	"appcast" : "https://raw.githubusercontent.com/sonburn/shared-style-finder/master/appcast.xml"
+}
