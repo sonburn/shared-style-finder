@@ -2,110 +2,132 @@
 
 var strPluginName = "Shared Style Finder";
 
-var styles,
+var layerStyles = getStyles(0),
+	textStyles = getStyles(1),
+	styles,
 	styleNames,
 	uiButtons = [];
 
 var onRun = function(context) {
-	var alertWindow = COSAlertWindow.new(),
-		pluginIconPath = context.plugin.urlForResourceNamed("icon.png").path(),
-		pluginIcon = NSImage.alloc().initByReferencingFile(pluginIconPath);
+	if (layerStyles.length || textStyles.length) {
+		var alertWindow = COSAlertWindow.new(),
+			pluginIconPath = context.plugin.urlForResourceNamed("icon.png").path(),
+			pluginIcon = NSImage.alloc().initByReferencingFile(pluginIconPath);
 
-	alertWindow.setIcon(pluginIcon);
-	alertWindow.setMessageText(strPluginName);
-	alertWindow.setInformativeText("Find instances of a shared layer or text style.");
+		alertWindow.setIcon(pluginIcon);
+		alertWindow.setMessageText(strPluginName);
+		alertWindow.setInformativeText("Find instances of a shared layer or text style.");
 
-	var styleType = createSegmentedControl(["Layer Styles","Text Styles"]);
+		var styleType = createSegmentedControl(["Layer Styles","Text Styles"]);
 
-	styleType.cell().setAction("callAction:");
-	styleType.cell().setCOSJSTargetFunction(function(sender) {
-		styles = getStyles(sender.indexOfSelectedItem());
+		styles = layerStyles;
+
+		if (!textStyles.length) {
+			styleType.setEnabled_forSegment(0,1);
+			styleType.setSelected_forSegment(1,0);
+		} else if (!layerStyles.length) {
+			styleType.setEnabled_forSegment(0,0);
+			styleType.setSelected_forSegment(1,1);
+
+			styles = textStyles;
+		} else {
+			styleType.cell().setAction("callAction:");
+			styleType.cell().setCOSJSTargetFunction(function(sender) {
+				styles = (sender.indexOfSelectedItem() == 0) ? layerStyles : textStyles;
+				styleNames = getStyleNames(styles);
+
+				if (styleNames) {
+					styleList.removeAllItems();
+					styleList.addItemsWithObjectValues(styleNames);
+					styleList.selectItemAtIndex(0);
+				}
+			});
+		}
+
 		styleNames = getStyleNames(styles);
 
-		if (styleNames) {
-			styleList.removeAllItems();
-			styleList.addItemsWithObjectValues(styleNames);
-			styleList.selectItemAtIndex(0);
+		alertWindow.addAccessoryView(styleType);
+
+		var styleList = createSelect(styleNames,0,NSMakeRect(0,0,300,28));
+
+		alertWindow.addAccessoryView(styleList);
+
+		var styleListDelegate = new MochaJSDelegate({
+			"comboBoxSelectionDidChange:" : (function() {
+				if (styleList.indexOfSelectedItem() != -1) {
+					var selectedItem = styleList.indexOfSelectedItem();
+
+					var objectsWithStyleID = getObjectsWithStyleID(styles[selectedItem].objectID());
+
+					var subviews = layerListContent.subviews();
+
+					for (var i = subviews.length - 1; i >= 0; --i) {
+						subviews[i].removeFromSuperview();
+					}
+
+					var contentFrameWidth = 300,
+						contentFrameHeight = 384,
+						contentFrameGutter = 15;
+
+					var layerStyleWidth = contentFrameWidth - contentFrameGutter,
+						layerStyleHeight = 96,
+						layerListCount = 0;
+
+					for (var i = 0; i < objectsWithStyleID.length; i++) {
+						layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
+
+						layerListCount++;
+					}
+
+					layerListContent.frame = NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight);
+
+					matchCount.setStringValue("Matches: " + objectsWithStyleID.length);
+				}
+			})
+		});
+
+		styleList.setDelegate(styleListDelegate.getClassInstance());
+
+		var objectsWithStyleID = getObjectsWithStyleID(styles[0].objectID());
+
+		var contentFrameWidth = 300,
+			contentFrameHeight = 288,
+			contentFrameGutter = 15;
+
+		var layerStyleWidth = contentFrameWidth - contentFrameGutter,
+			layerStyleHeight = 96,
+			layerList = createScrollView(NSMakeRect(0,0,contentFrameWidth,contentFrameHeight)),
+			layerListContent = createContentView(NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight)),
+			layerListCount = 0;
+
+		for (var i = 0; i < objectsWithStyleID.length; i++) {
+			layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
+
+			layerListCount++;
 		}
-	});
 
-	alertWindow.addAccessoryView(styleType);
+		layerList.setDocumentView(layerListContent);
 
-	styles = getStyles(0);
-	styleNames = getStyleNames(styles);
+		alertWindow.addAccessoryView(layerList);
 
-	var styleList = createSelect(styleNames,0,NSMakeRect(0,0,300,28));
+		var matchCount = createTextField("Matches: " + objectsWithStyleID.length,NSMakeRect(0,0,300,18));
+		alertWindow.addAccessoryView(matchCount);
 
-	alertWindow.addAccessoryView(styleList);
+		alertWindow.addButtonWithTitle("Close");
 
-	var styleListDelegate = new MochaJSDelegate({
-		"comboBoxSelectionDidChange:" : (function() {
-			if (styleList.indexOfSelectedItem() != -1) {
-				var selectedItem = styleList.indexOfSelectedItem();
+		var alertResponse = alertWindow.runModal();
 
-				var objectsWithStyleID = getObjectsWithStyleID(styles[selectedItem].objectID());
-
-				var subviews = layerListContent.subviews();
-
-				for (var i = subviews.length - 1; i >= 0; --i) {
-					subviews[i].removeFromSuperview();
-				}
-
-				var contentFrameWidth = 300,
-					contentFrameHeight = 384,
-					contentFrameGutter = 15;
-
-				var layerStyleWidth = contentFrameWidth - contentFrameGutter,
-					layerStyleHeight = 96,
-					layerListCount = 0;
-
-				for (var i = 0; i < objectsWithStyleID.length; i++) {
-					layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
-
-					layerListCount++;
-				}
-
-				layerListContent.frame = NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight);
-
-				matchCount.setStringValue("Matches: " + objectsWithStyleID.length);
-			}
-		})
-	});
-
-	styleList.setDelegate(styleListDelegate.getClassInstance());
-
-	var objectsWithStyleID = getObjectsWithStyleID(styles[0].objectID());
-
-	var contentFrameWidth = 300,
-		contentFrameHeight = 288,
-		contentFrameGutter = 15;
-
-	var layerStyleWidth = contentFrameWidth - contentFrameGutter,
-		layerStyleHeight = 96,
-		layerList = createScrollView(NSMakeRect(0,0,contentFrameWidth,contentFrameHeight)),
-		layerListContent = createContentView(NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight)),
-		layerListCount = 0;
-
-	for (var i = 0; i < objectsWithStyleID.length; i++) {
-		layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
-
-		layerListCount++;
+		if (alertResponse == 1000) {
+			// Do something
+		} else return false;
+	} else {
+		displayDialog("This document has no shared styles.",strPluginName);
 	}
+}
 
-	layerList.setDocumentView(layerListContent);
-
-	alertWindow.addAccessoryView(layerList);
-
-	var matchCount = createTextField("Matches: " + objectsWithStyleID.length,NSMakeRect(0,0,300,18));
-	alertWindow.addAccessoryView(matchCount);
-
-	alertWindow.addButtonWithTitle("Close");
-
-	var alertResponse = alertWindow.runModal();
-
-	if (alertResponse == 1000) {
-		// Do something
-	} else return false;
+function displayDialog(body,title) {
+	var app = NSApplication.sharedApplication();
+	app.displayDialog_withTitle(body,title);
 }
 
 function createListItem(instance,frame) {
@@ -126,25 +148,6 @@ function createListItem(instance,frame) {
 	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
 
 	return listItem;
-}
-
-function getObjectsWithStyleID(styleID) {
-	var objectsWithStyleID = NSMutableArray.array(),
-		pageLoop = MSDocument.currentDocument().pages().objectEnumerator(),
-		page;
-
-	while (page = pageLoop.nextObject()) {
-		var predicate = NSPredicate.predicateWithFormat("style.sharedObjectID == %@",styleID),
-			layers = page.children().filteredArrayUsingPredicate(predicate),
-			layerLoop = layers.objectEnumerator(),
-			layer;
-
-		while (layer = layerLoop.nextObject()) {
-			objectsWithStyleID.addObject(layer);
-		}
-	}
-
-	return objectsWithStyleID;
 }
 
 function getObjectsWithStyleID(styleID) {
@@ -208,7 +211,7 @@ function createSegmentedControl(items) {
 	});
 
 	segControl.cell().setTrackingMode(0); //Raw value of NSSegmentSwitchTrackingSelectOne.
-	segControl.setSelected_forSegment(true, 0);
+	segControl.setSelected_forSegment(1,0);
 
 	return segControl;
 }

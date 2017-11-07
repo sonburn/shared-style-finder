@@ -6,15 +6,15 @@
 		<description>Find instances of a shared layer or text style.</description>
 		<language>en</language>
 		<item>
-			<title>Version 0.1</title>
+			<title>Version 0.2</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Initial commit.</li>
+				<li>Improved handling when no shared styles.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="0.1" />
+			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="0.2" />
 		</item>
 	</channel>
 </rss>

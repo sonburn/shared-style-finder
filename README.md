@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **0.2** - Improved handling when no shared styles.
 * **0.1** - Initial commit.
 
 # Contact
