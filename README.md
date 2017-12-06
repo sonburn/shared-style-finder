@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **0.3** - Fix for Sketch 48 change of currentView to contentDrawView.
 * **0.2** - Improved handling when no shared styles.
 * **0.1** - Initial commit.
 

@@ -387,7 +387,7 @@ function createTargetArea(instance,frame) {
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
 
 		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
-		MSDocument.currentDocument().currentView().zoomToFitRect(rect);
+		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
 		instance.select_byExpandingSelection(true,false);
 	});
