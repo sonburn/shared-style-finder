@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **0.5** - General optimizations.
 * **0.4** - Added plugin icon to manifest for Sketch 50.
 * **0.3** - Fix for Sketch 48 change of currentView to contentDrawView.
 * **0.2** - Improved handling when no shared styles.

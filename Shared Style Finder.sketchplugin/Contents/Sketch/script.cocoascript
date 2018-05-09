@@ -1,6 +1,7 @@
-@import 'MochaJSDelegate.js';
+@import "MochaJSDelegate.js";
 
-var strPluginName = "Shared Style Finder";
+var strPluginName = "Shared Style Finder",
+	debugMode = false;
 
 var layerStyles = getStyles(0),
 	textStyles = getStyles(1),
@@ -8,7 +9,7 @@ var layerStyles = getStyles(0),
 	styleNames,
 	uiButtons = [];
 
-var onRun = function(context) {
+var find = function(context) {
 	if (layerStyles.length || textStyles.length) {
 		var alertWindow = COSAlertWindow.new(),
 			pluginIconPath = context.plugin.urlForResourceNamed("icon.png").path(),
@@ -110,12 +111,14 @@ var onRun = function(context) {
 
 		alertWindow.addAccessoryView(layerList);
 
-		var matchCount = createTextField("Matches: " + objectsWithStyleID.length,NSMakeRect(0,0,300,18));
+		var matchCount = createField("Matches: " + objectsWithStyleID.length,NSMakeRect(0,0,300,18));
 		alertWindow.addAccessoryView(matchCount);
 
 		alertWindow.addButtonWithTitle("Close");
 
 		var alertResponse = alertWindow.runModal();
+
+		if (!debugMode) googleAnalytics(context,"find","run");
 
 		if (alertResponse == 1000) {
 			// Do something
@@ -125,9 +128,117 @@ var onRun = function(context) {
 	}
 }
 
-function displayDialog(body,title) {
-	var app = NSApplication.sharedApplication();
-	app.displayDialog_withTitle(body,title);
+var report = function(context) {
+	openUrl("https://github.com/sonburn/shared-style-finder/issues/new");
+
+	if (!debugMode) googleAnalytics(context,"report","report");
+}
+
+var donate = function(context) {
+	openUrl("https://www.paypal.me/sonburn");
+
+	if (!debugMode) googleAnalytics(context,"donate","donate");
+}
+
+function createBoldLabel(text,size,frame) {
+	var label = NSTextField.alloc().initWithFrame(frame);
+
+	label.setStringValue(text);
+	label.setFont(NSFont.boldSystemFontOfSize(size));
+	label.setBezeled(0);
+	label.setDrawsBackground(0);
+	label.setEditable(0);
+	label.setSelectable(0);
+
+	return label;
+}
+
+function createCheckbox(item,state,frame) {
+	var checkbox = NSButton.alloc().initWithFrame(frame),
+		state = (state == false) ? NSOffState : NSOnState;
+
+	checkbox.setButtonType(NSSwitchButton);
+	checkbox.setBezelStyle(0);
+	checkbox.setTitle(item.name);
+	checkbox.setTag(item.value);
+	checkbox.setState(state);
+
+	return checkbox;
+}
+
+function createContentView(frame) {
+	var view = NSView.alloc().initWithFrame(frame);
+
+	view.setFlipped(1);
+
+	return view;
+}
+
+function createDivider(frame) {
+	var divider = NSView.alloc().initWithFrame(frame);
+
+	divider.setWantsLayer(1);
+	divider.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
+
+	return divider;
+}
+
+function createField(string,frame) {
+	var textField = NSTextField.alloc().initWithFrame(frame);
+
+	textField.setStringValue(string);
+	textField.setFont(NSFont.systemFontOfSize(11));
+	textField.setBezeled(0);
+	textField.setEditable(0);
+	textField.setDrawsBackground(0);
+	textField.setLineBreakMode(NSLineBreakByTruncatingTail);
+
+	return textField;
+}
+
+function createImageArea(instance,frame) {
+	var imageArea = NSButton.alloc().initWithFrame(frame);
+
+	imageArea.setTitle("");
+	imageArea.setBordered(0);
+	imageArea.setWantsLayer(1);
+	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(248/255,248/255,248/255,1.0));
+
+	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
+		instance,
+		instance.absoluteInfluenceRect(),
+		false
+		).firstObject();
+
+	exportRequest.format = "png";
+
+	var scaleX = (frame.size.width-4*2) / exportRequest.rect().size.width;
+	var scaleY = (frame.size.height-4*2) / exportRequest.rect().size.height;
+
+	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+	var colorSpace = NSColorSpace.sRGBColorSpace(),
+		exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
+		imageRep = exporter.bitmapImageRep(),
+		instanceImage = NSImage.alloc().init().autorelease();
+
+	instanceImage.addRepresentation(imageRep);
+
+	imageArea.setImage(instanceImage);
+
+	return imageArea;
+}
+
+function createLabel(string,frame) {
+	var textLabel = NSTextField.alloc().initWithFrame(frame);
+
+	textLabel.setStringValue(string);
+	textLabel.setFont(NSFont.systemFontOfSize(9));
+	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
+	textLabel.setBezeled(0);
+	textLabel.setEditable(0);
+
+	return textLabel;
 }
 
 function createListItem(instance,frame) {
@@ -137,17 +248,86 @@ function createListItem(instance,frame) {
 		leftPad = 8;
 
 	listItem.setFlipped(1);
-	listItem.addSubview(createTextLabel("Page",NSMakeRect(leftPad,6,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth-leftPad,18)));
-	listItem.addSubview(createTextLabel("Artboard",NSMakeRect(leftPad,34,leftColWidth,14)));
-	listItem.addSubview(createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth-leftPad,18)));
-	listItem.addSubview(createTextLabel("Instance",NSMakeRect(leftPad,62,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.name(),NSMakeRect(leftPad,74,leftColWidth-leftPad,18)));
+	listItem.addSubview(createLabel("Page",NSMakeRect(leftPad,6,leftColWidth,14)));
+	listItem.addSubview(createField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth-leftPad,18)));
+	listItem.addSubview(createLabel("Artboard",NSMakeRect(leftPad,34,leftColWidth,14)));
+	listItem.addSubview(createField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth-leftPad,18)));
+	listItem.addSubview(createLabel("Instance",NSMakeRect(leftPad,62,leftColWidth,14)));
+	listItem.addSubview(createField(instance.name(),NSMakeRect(leftPad,74,leftColWidth-leftPad,18)));
 	listItem.addSubview(createImageArea(instance,NSMakeRect(leftColWidth,0,rightColWidth,frame.size.height)));
 	listItem.addSubview(createDivider(NSMakeRect(0,frame.size.height-1,frame.size.width,1)));
 	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
 
 	return listItem;
+}
+
+function createScrollView(frame) {
+	var view = NSScrollView.alloc().initWithFrame(frame);
+
+	view.setHasVerticalScroller(1);
+
+	return view;
+}
+
+function createSegmentedControl(items) {
+	var segControl = NSSegmentedControl.alloc().initWithFrame(NSMakeRect(0,0,300,24));
+
+	segControl.setSegmentCount(items.length);
+
+	items.forEach(function(item,index) {
+		segControl.setLabel_forSegment(item,index);
+		segControl.setWidth_forSegment(0,index);
+	});
+
+	segControl.cell().setTrackingMode(0); //Raw value of NSSegmentSwitchTrackingSelectOne.
+	segControl.setSelected_forSegment(1,0);
+
+	return segControl;
+}
+
+function createSelect(items,selectedItemIndex,frame) {
+	var comboBox = NSComboBox.alloc().initWithFrame(frame),
+		selectedItemIndex = (selectedItemIndex > -1) ? selectedItemIndex : 0;
+
+	comboBox.addItemsWithObjectValues(items);
+	comboBox.selectItemAtIndex(selectedItemIndex);
+	comboBox.setNumberOfVisibleItems(16);
+	comboBox.setEditable(0);
+
+	return comboBox;
+}
+
+function createTargetArea(instance,frame) {
+	var targetArea = NSButton.alloc().initWithFrame(frame);
+
+	uiButtons.push(targetArea);
+
+	targetArea.addCursorRect_cursor(targetArea.frame(),NSCursor.pointingHandCursor());
+	targetArea.setTransparent(1);
+	targetArea.setAction("callAction:");
+	targetArea.setCOSJSTargetFunction(function(sender) {
+		for (var i = 0; i < uiButtons.length; i++) {
+			if (uiButtons[i].layer()) uiButtons[i].layer().setBorderWidth(0);
+		}
+
+		sender.setWantsLayer(1);
+		sender.layer().setBorderWidth(2);
+		sender.layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
+
+		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
+
+		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
+		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
+
+		instance.select_byExpandingSelection(true,false);
+	});
+
+	return targetArea;
+}
+
+function displayDialog(body,title) {
+	var app = NSApplication.sharedApplication();
+	app.displayDialog_withTitle(body,title);
 }
 
 function getObjectsWithStyleID(styleID) {
@@ -169,15 +349,6 @@ function getObjectsWithStyleID(styleID) {
 	return objectsWithStyleID;
 }
 
-function getStyles(type) {
-	var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
-
-	var sortByName = NSSortDescriptor.sortDescriptorWithKey_ascending("name",1);
-	styles = styles.sortedArrayUsingDescriptors([sortByName]);
-
-	return styles;
-}
-
 function getStyleNames(source) {
 	var styleNames = [];
 
@@ -188,74 +359,13 @@ function getStyleNames(source) {
 	return styleNames;
 }
 
-function createSelect(items,selectedItemIndex,frame) {
-	var comboBox = NSComboBox.alloc().initWithFrame(frame),
-		selectedItemIndex = (selectedItemIndex > -1) ? selectedItemIndex : 0;
+function getStyles(type) {
+	var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
 
-	comboBox.addItemsWithObjectValues(items);
-	comboBox.selectItemAtIndex(selectedItemIndex);
-	comboBox.setNumberOfVisibleItems(16);
-	comboBox.setEditable(0);
+	var sortByName = NSSortDescriptor.sortDescriptorWithKey_ascending("name",1);
+	styles = styles.sortedArrayUsingDescriptors([sortByName]);
 
-	return comboBox;
-}
-
-function createSegmentedControl(items) {
-	var segControl = NSSegmentedControl.alloc().initWithFrame(NSMakeRect(0,0,300,24));
-
-	segControl.setSegmentCount(items.length);
-
-	items.forEach(function(item,index) {
-		segControl.setLabel_forSegment(item,index);
-		segControl.setWidth_forSegment(0,index);
-	});
-
-	segControl.cell().setTrackingMode(0); //Raw value of NSSegmentSwitchTrackingSelectOne.
-	segControl.setSelected_forSegment(1,0);
-
-	return segControl;
-}
-
-function createCheckbox(item,state,frame) {
-	var checkbox = NSButton.alloc().initWithFrame(frame),
-		state = (state == false) ? NSOffState : NSOnState;
-
-	checkbox.setButtonType(NSSwitchButton);
-	checkbox.setBezelStyle(0);
-	checkbox.setTitle(item.name);
-	checkbox.setTag(item.value);
-	checkbox.setState(state);
-
-	return checkbox;
-}
-
-function createBoldLabel(text,size,frame) {
-	var label = NSTextField.alloc().initWithFrame(frame);
-
-	label.setStringValue(text);
-	label.setFont(NSFont.boldSystemFontOfSize(size));
-	label.setBezeled(0);
-	label.setDrawsBackground(0);
-	label.setEditable(0);
-	label.setSelectable(0);
-
-	return label;
-}
-
-function createContentView(frame) {
-	var view = NSView.alloc().initWithFrame(frame);
-
-	view.setFlipped(1);
-
-	return view;
-}
-
-function createScrollView(frame) {
-	var view = NSScrollView.alloc().initWithFrame(frame);
-
-	view.setHasVerticalScroller(1);
-
-	return view;
+	return styles;
 }
 
 function getUnusedStyles(type) {
@@ -296,101 +406,54 @@ function getUnusedStyles(type) {
 	return unusedStyles.sortedArrayUsingDescriptors([sortByName]);
 }
 
+function googleAnalytics(context,category,action,label,value) {
+	var trackingID = "UA-118958211-1",
+		uuidKey = "google.analytics.uuid",
+		uuid = NSUserDefaults.standardUserDefaults().objectForKey(uuidKey);
+
+	if (!uuid) {
+		uuid = NSUUID.UUID().UUIDString();
+		NSUserDefaults.standardUserDefaults().setObject_forKey(uuid,uuidKey);
+	}
+
+	var url = "https://www.google-analytics.com/collect?v=1";
+	// Tracking ID
+	url += "&tid=" + trackingID;
+	// Source
+	url += "&ds=sketch" + MSApplicationMetadata.metadata().appVersion;
+	// Client ID
+	url += "&cid=" + uuid;
+	// pageview, screenview, event, transaction, item, social, exception, timing
+	url += "&t=event";
+	// App Name
+	url += "&an=" + encodeURI(context.plugin.name());
+	// App ID
+	url += "&aid=" + context.plugin.identifier();
+	// App Version
+	url += "&av=" + context.plugin.version();
+	// Event category
+	url += "&ec=" + encodeURI(category);
+	// Event action
+	url += "&ea=" + encodeURI(action);
+	// Event label
+	if (label) {
+		url += "&el=" + encodeURI(label);
+	}
+	// Event value
+	if (value) {
+		url += "&ev=" + encodeURI(value);
+	}
+
+	var session = NSURLSession.sharedSession(),
+		task = session.dataTaskWithURL(NSURL.URLWithString(NSString.stringWithString(url)));
+
+	task.resume();
+}
+
+function openUrl(url) {
+	NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString(url));
+}
+
 function removeDuplicates(value,index,self) {
 	return self.indexOf(value) === index;
-}
-
-function createTextLabel(string,frame) {
-	var textLabel = NSTextField.alloc().initWithFrame(frame);
-
-	textLabel.setStringValue(string);
-	textLabel.setFont(NSFont.systemFontOfSize(9));
-	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
-	textLabel.setBezeled(0);
-	textLabel.setEditable(0);
-
-	return textLabel;
-}
-
-function createTextField(string,frame) {
-	var textField = NSTextField.alloc().initWithFrame(frame);
-
-	textField.setStringValue(string);
-	textField.setFont(NSFont.systemFontOfSize(11));
-	textField.setBezeled(0);
-	textField.setEditable(0);
-	textField.setDrawsBackground(0);
-	textField.setLineBreakMode(NSLineBreakByTruncatingTail);
-
-	return textField;
-}
-
-function createDivider(frame) {
-	var divider = NSView.alloc().initWithFrame(frame);
-
-	divider.setWantsLayer(1);
-	divider.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
-
-	return divider;
-}
-
-function createImageArea(instance,frame) {
-	var imageArea = NSButton.alloc().initWithFrame(frame);
-
-	imageArea.setTitle("");
-	imageArea.setBordered(0);
-	imageArea.setWantsLayer(1);
-	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(248/255,248/255,248/255,1.0));
-
-	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
-		instance,
-		instance.absoluteInfluenceRect(),
-		false
-		).firstObject();
-
-	exportRequest.format = "png";
-
-	var scaleX = (frame.size.width-4*2) / exportRequest.rect().size.width;
-	var scaleY = (frame.size.height-4*2) / exportRequest.rect().size.height;
-
-	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
-
-	var colorSpace = NSColorSpace.sRGBColorSpace(),
-		exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
-		imageRep = exporter.bitmapImageRep(),
-		instanceImage = NSImage.alloc().init().autorelease();
-
-	instanceImage.addRepresentation(imageRep);
-
-	imageArea.setImage(instanceImage);
-
-	return imageArea;
-}
-
-function createTargetArea(instance,frame) {
-	var targetArea = NSButton.alloc().initWithFrame(frame);
-
-	uiButtons.push(targetArea);
-
-	targetArea.addCursorRect_cursor(targetArea.frame(),NSCursor.pointingHandCursor());
-	targetArea.setTransparent(1);
-	targetArea.setAction("callAction:");
-	targetArea.setCOSJSTargetFunction(function(sender) {
-		for (var i = 0; i < uiButtons.length; i++) {
-			if (uiButtons[i].layer()) uiButtons[i].layer().setBorderWidth(0);
-		}
-
-		sender.setWantsLayer(1);
-		sender.layer().setBorderWidth(2);
-		sender.layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
-
-		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
-
-		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
-		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
-
-		instance.select_byExpandingSelection(true,false);
-	});
-
-	return targetArea;
 }
