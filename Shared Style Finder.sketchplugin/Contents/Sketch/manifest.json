@@ -38,5 +38,6 @@
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Shared Style Finder",
 	"icon" : "icon.png",
-	"appcast" : "https://raw.githubusercontent.com/sonburn/shared-style-finder/master/appcast.xml"
+	"appcast" : "https://raw.githubusercontent.com/sonburn/shared-style-finder/master/appcast.xml",
+	"homepage" : "https://github.com/sonburn/shared-style-finder"
 }
