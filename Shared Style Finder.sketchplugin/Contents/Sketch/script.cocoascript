@@ -1,6 +1,7 @@
 @import "MochaJSDelegate.js";
 
 var strPluginName = "Shared Style Finder",
+	sketchVersion = NSBundle.mainBundle().infoDictionary()["CFBundleShortVersionString"],
 	debugMode = false;
 
 var layerStyles = getStyles(0),
@@ -58,7 +59,7 @@ var find = function(context) {
 				if (styleList.indexOfSelectedItem() != -1) {
 					var selectedItem = styleList.indexOfSelectedItem();
 
-					var objectsWithStyleID = getObjectsWithStyleID(styles[selectedItem].objectID());
+					var objectsWithStyleID = (sketchVersion < 52) ? getObjectsWithStyleIDOld(styles[selectedItem].objectID()) : getObjectsWithStyleID(styles[selectedItem].objectID());
 
 					var subviews = layerListContent.subviews();
 
@@ -89,7 +90,7 @@ var find = function(context) {
 
 		styleList.setDelegate(styleListDelegate.getClassInstance());
 
-		var objectsWithStyleID = getObjectsWithStyleID(styles[0].objectID());
+		var objectsWithStyleID = (sketchVersion < 52) ? getObjectsWithStyleIDOld(styles[0].objectID()) : getObjectsWithStyleID(styles[0].objectID());
 
 		var contentFrameWidth = 300,
 			contentFrameHeight = 288,
@@ -331,6 +332,21 @@ function displayDialog(body,title) {
 }
 
 function getObjectsWithStyleID(styleID) {
+	var sketch = require("sketch"),
+		document = sketch.getSelectedDocument(),
+		style = (document.getSharedLayerStyleWithID(styleID)) ? document.getSharedLayerStyleWithID(styleID) : document.getSharedTextStyleWithID(styleID),
+		styleInstances = style.getAllInstances();
+
+	var objectsWithStyleID = NSMutableArray.array();
+
+	styleInstances.forEach(function(style){
+		objectsWithStyleID.addObject(style.getParentLayer());
+	});
+
+	return objectsWithStyleID;
+}
+
+function getObjectsWithStyleIDOld(styleID) {
 	var objectsWithStyleID = NSMutableArray.array(),
 		pageLoop = MSDocument.currentDocument().pages().objectEnumerator(),
 		page;
