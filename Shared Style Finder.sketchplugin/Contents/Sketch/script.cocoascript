@@ -1,11 +1,12 @@
 @import "MochaJSDelegate.js";
 
-var strPluginName = "Shared Style Finder",
-	sketchVersion = NSBundle.mainBundle().infoDictionary()["CFBundleShortVersionString"],
+var sketch = require("sketch"),
+	pluginName = "Shared Style Finder",
+	pluginIdentifier = "com.sonburn.sketchplugins.shared-style-finder",
 	debugMode = false;
 
-var layerStyles = getStyles(0),
-	textStyles = getStyles(1),
+var layerStyles = getSharedStyles(0),
+	textStyles = getSharedStyles(1),
 	styles,
 	styleNames,
 	uiButtons = [];
@@ -17,7 +18,7 @@ var find = function(context) {
 			pluginIcon = NSImage.alloc().initByReferencingFile(pluginIconPath);
 
 		alertWindow.setIcon(pluginIcon);
-		alertWindow.setMessageText(strPluginName);
+		alertWindow.setMessageText(pluginName);
 		alertWindow.setInformativeText("Find instances of a shared layer or text style.");
 
 		var styleType = createSegmentedControl(["Layer Styles","Text Styles"]);
@@ -59,7 +60,7 @@ var find = function(context) {
 				if (styleList.indexOfSelectedItem() != -1) {
 					var selectedItem = styleList.indexOfSelectedItem();
 
-					var objectsWithStyleID = (sketchVersion < 52) ? getObjectsWithStyleIDOld(styles[selectedItem].objectID()) : getObjectsWithStyleID(styles[selectedItem].objectID());
+					var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[selectedItem].objectID()) : getObjectsWithStyleID(styles[selectedItem].objectID());
 
 					var subviews = layerListContent.subviews();
 
@@ -84,13 +85,19 @@ var find = function(context) {
 					layerListContent.frame = NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight);
 
 					matchCount.setStringValue("Matches: " + objectsWithStyleID.length);
+
+					if (objectsWithStyleID.length == 0) {
+						removeStyleButton.setEnabled(1);
+					} else {
+						removeStyleButton.setEnabled(0);
+					}
 				}
 			})
 		});
 
 		styleList.setDelegate(styleListDelegate.getClassInstance());
 
-		var objectsWithStyleID = (sketchVersion < 52) ? getObjectsWithStyleIDOld(styles[0].objectID()) : getObjectsWithStyleID(styles[0].objectID());
+		var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[0].objectID()) : getObjectsWithStyleID(styles[0].objectID());
 
 		var contentFrameWidth = 300,
 			contentFrameHeight = 288,
@@ -116,6 +123,13 @@ var find = function(context) {
 		alertWindow.addAccessoryView(matchCount);
 
 		alertWindow.addButtonWithTitle("Close");
+		var removeStyleButton = alertWindow.addButtonWithTitle("Remove Style");
+
+		if (objectsWithStyleID.length == 0) {
+			removeStyleButton.setEnabled(1);
+		} else {
+			removeStyleButton.setEnabled(0);
+		}
 
 		var alertResponse = alertWindow.runModal();
 
@@ -123,9 +137,32 @@ var find = function(context) {
 
 		if (alertResponse == 1000) {
 			// Do something
+		} else if (alertResponse == 1001) {
+			var document = sketch.getSelectedDocument(),
+				selectedItem = styleList.indexOfSelectedItem(),
+				selectedStyle = styles[selectedItem],
+				selectedStyleSource;
+
+			if (document.getSharedLayerStyleWithID(selectedStyle.objectID())) {
+				selectedStyle = document.getSharedLayerStyleWithID(selectedStyle.objectID());
+				selectedStyleSource = MSDocument.currentDocument().documentData().layerStyles();
+			} else {
+				selectedStyle = document.getSharedTextStyleWithID(selectedStyle.objectID());
+				selectedStyleSource = MSDocument.currentDocument().documentData().layerTextStyles();
+			}
+
+			if (!selectedStyle.getAllInstancesLayers().length) {
+				if (selectedStyleSource.sharedStyleWithID) {
+					selectedStyleSource.removeSharedStyle(selectedStyleSource.sharedStyleWithID(selectedStyle.id));
+				} else {
+					selectedStyleSource.removeSharedStyle(selectedStyle);
+				}
+			}
+
+			NSApplication.sharedApplication().delegate().runPluginCommandWithIdentifier_fromBundleAtURL_context("find",context.command.pluginBundle().url(),context);
 		} else return false;
 	} else {
-		displayDialog("This document has no shared styles.",strPluginName);
+		displayDialog("This document has no shared styles.",pluginName);
 	}
 }
 
@@ -375,7 +412,7 @@ function getStyleNames(source) {
 	return styleNames;
 }
 
-function getStyles(type) {
+function getSharedStyles(type) {
 	var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
 
 	var sortByName = NSSortDescriptor.sortDescriptorWithKey_ascending("name",1);

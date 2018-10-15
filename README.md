@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **0.7** - Added option to remove a style if it's unused.
 * **0.6** - Fix for Sketch 52 changes to styles.
 * **0.5** - General optimizations.
 * **0.4** - Added plugin icon to manifest for Sketch 50.

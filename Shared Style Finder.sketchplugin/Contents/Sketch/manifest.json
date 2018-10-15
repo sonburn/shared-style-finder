@@ -33,7 +33,7 @@
 		]
 	},
 	"identifier" : "com.sonburn.sketchplugins.shared-style-finder",
-	"version" : "0.6",
+	"version" : "0.7",
 	"description" : "Find instances of a shared layer or text style.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Shared Style Finder",
