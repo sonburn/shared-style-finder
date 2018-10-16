@@ -12,158 +12,170 @@ var layerStyles = getSharedStyles(0),
 	uiButtons = [];
 
 var find = function(context) {
-	if (layerStyles.length || textStyles.length) {
-		var alertWindow = COSAlertWindow.new(),
-			pluginIconPath = context.plugin.urlForResourceNamed("icon.png").path(),
-			pluginIcon = NSImage.alloc().initByReferencingFile(pluginIconPath);
-
-		alertWindow.setIcon(pluginIcon);
-		alertWindow.setMessageText(pluginName);
-		alertWindow.setInformativeText("Find instances of a shared layer or text style.");
-
-		var styleType = createSegmentedControl(["Layer Styles","Text Styles"]);
-
-		styles = layerStyles;
-
-		if (!textStyles.length) {
-			styleType.setEnabled_forSegment(0,1);
-			styleType.setSelected_forSegment(1,0);
-		} else if (!layerStyles.length) {
-			styleType.setEnabled_forSegment(0,0);
-			styleType.setSelected_forSegment(1,1);
-
-			styles = textStyles;
-		} else {
-			styleType.cell().setAction("callAction:");
-			styleType.cell().setCOSJSTargetFunction(function(sender) {
-				styles = (sender.indexOfSelectedItem() == 0) ? layerStyles : textStyles;
-				styleNames = getStyleNames(styles);
-
-				if (styleNames) {
-					styleList.removeAllItems();
-					styleList.addItemsWithObjectValues(styleNames);
-					styleList.selectItemAtIndex(0);
-				}
-			});
-		}
-
-		styleNames = getStyleNames(styles);
-
-		alertWindow.addAccessoryView(styleType);
-
-		var styleList = createSelect(styleNames,0,NSMakeRect(0,0,300,28));
-
-		alertWindow.addAccessoryView(styleList);
-
-		var styleListDelegate = new MochaJSDelegate({
-			"comboBoxSelectionDidChange:" : (function() {
-				if (styleList.indexOfSelectedItem() != -1) {
-					var selectedItem = styleList.indexOfSelectedItem();
-
-					var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[selectedItem].objectID()) : getObjectsWithStyleID(styles[selectedItem].objectID());
-
-					var subviews = layerListContent.subviews();
-
-					for (var i = subviews.length - 1; i >= 0; --i) {
-						subviews[i].removeFromSuperview();
-					}
-
-					var contentFrameWidth = 300,
-						contentFrameHeight = 384,
-						contentFrameGutter = 15;
-
-					var layerStyleWidth = contentFrameWidth - contentFrameGutter,
-						layerStyleHeight = 96,
-						layerListCount = 0;
-
-					for (var i = 0; i < objectsWithStyleID.length; i++) {
-						layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
-
-						layerListCount++;
-					}
-
-					layerListContent.frame = NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight);
-
-					matchCount.setStringValue("Matches: " + objectsWithStyleID.length);
-
-					if (objectsWithStyleID.length == 0) {
-						removeStyleButton.setEnabled(1);
-					} else {
-						removeStyleButton.setEnabled(0);
-					}
-				}
-			})
-		});
-
-		styleList.setDelegate(styleListDelegate.getClassInstance());
-
-		var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[0].objectID()) : getObjectsWithStyleID(styles[0].objectID());
-
-		var contentFrameWidth = 300,
-			contentFrameHeight = 288,
-			contentFrameGutter = 15;
-
-		var layerStyleWidth = contentFrameWidth - contentFrameGutter,
-			layerStyleHeight = 96,
-			layerList = createScrollView(NSMakeRect(0,0,contentFrameWidth,contentFrameHeight)),
-			layerListContent = createContentView(NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight)),
-			layerListCount = 0;
-
-		for (var i = 0; i < objectsWithStyleID.length; i++) {
-			layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
-
-			layerListCount++;
-		}
-
-		layerList.setDocumentView(layerListContent);
-
-		alertWindow.addAccessoryView(layerList);
-
-		var matchCount = createField("Matches: " + objectsWithStyleID.length,NSMakeRect(0,0,300,18));
-		alertWindow.addAccessoryView(matchCount);
-
-		alertWindow.addButtonWithTitle("Close");
-		var removeStyleButton = alertWindow.addButtonWithTitle("Remove Style");
-
-		if (objectsWithStyleID.length == 0) {
-			removeStyleButton.setEnabled(1);
-		} else {
-			removeStyleButton.setEnabled(0);
-		}
-
-		var alertResponse = alertWindow.runModal();
-
-		if (!debugMode) googleAnalytics(context,"find","run");
-
-		if (alertResponse == 1000) {
-			// Do something
-		} else if (alertResponse == 1001) {
-			var document = sketch.getSelectedDocument(),
-				selectedItem = styleList.indexOfSelectedItem(),
-				selectedStyle = styles[selectedItem],
-				selectedStyleSource;
-
-			if (document.getSharedLayerStyleWithID(selectedStyle.objectID())) {
-				selectedStyle = document.getSharedLayerStyleWithID(selectedStyle.objectID());
-				selectedStyleSource = MSDocument.currentDocument().documentData().layerStyles();
-			} else {
-				selectedStyle = document.getSharedTextStyleWithID(selectedStyle.objectID());
-				selectedStyleSource = MSDocument.currentDocument().documentData().layerTextStyles();
-			}
-
-			if (!selectedStyle.getAllInstancesLayers().length) {
-				if (selectedStyleSource.sharedStyleWithID) {
-					selectedStyleSource.removeSharedStyle(selectedStyleSource.sharedStyleWithID(selectedStyle.id));
-				} else {
-					selectedStyleSource.removeSharedStyle(selectedStyle);
-				}
-			}
-
-			NSApplication.sharedApplication().delegate().runPluginCommandWithIdentifier_fromBundleAtURL_context("find",context.command.pluginBundle().url(),context);
-		} else return false;
-	} else {
+	if (!layerStyles.length && !textStyles.length) {
 		displayDialog("This document has no shared styles.",pluginName);
+		return;
 	}
+
+	var alertWidth = 380,
+		contentFrameWidth = alertWidth,
+		contentFrameGutter = 15,
+		layerStyleWidth = contentFrameWidth - contentFrameGutter,
+		layerStyleHeight = 96,
+		layerStylesVisible = 4,
+		settingPad = 10,
+		settingY = 0;
+
+	var alert = NSAlert.alloc().init(),
+		alertIconPath = context.plugin.urlForResourceNamed("icon.png").path(),
+		alertIcon = NSImage.alloc().initByReferencingFile(alertIconPath),
+		alertContent = NSView.alloc().init();
+
+	alert.setIcon(alertIcon);
+	alert.setMessageText(pluginName);
+	alert.setInformativeText("Find instances of a shared layer or text style.");
+
+	alertContent.setFlipped(true);
+
+	var styleType = createSegmentedControl(["Layer Styles","Text Styles"],NSMakeRect(0,settingY,alertWidth,24));
+
+	styles = layerStyles;
+
+	if (!textStyles.length) {
+		styleType.setEnabled_forSegment(0,1);
+		styleType.setSelected_forSegment(1,0);
+	} else if (!layerStyles.length) {
+		styleType.setEnabled_forSegment(0,0);
+		styleType.setSelected_forSegment(1,1);
+
+		styles = textStyles;
+	} else {
+		styleType.cell().setAction("callAction:");
+		styleType.cell().setCOSJSTargetFunction(function(sender) {
+			styles = (sender.indexOfSelectedItem() == 0) ? layerStyles : textStyles;
+			styleNames = getStyleNames(styles);
+
+			if (styleNames) {
+				styleList.removeAllItems();
+				styleList.addItemsWithObjectValues(styleNames);
+				styleList.selectItemAtIndex(0);
+			}
+		});
+	}
+
+	styleNames = getStyleNames(styles);
+
+	alertContent.addSubview(styleType);
+
+	settingY = CGRectGetMaxY(alertContent.subviews().lastObject().frame()) + settingPad;
+
+	var styleList = createSelect(styleNames,0,NSMakeRect(0,settingY,alertWidth,28));
+
+	alertContent.addSubview(styleList);
+
+	var styleListDelegate = new MochaJSDelegate({
+		"comboBoxSelectionDidChange:" : (function() {
+			if (styleList.indexOfSelectedItem() != -1) {
+				var selectedItem = styleList.indexOfSelectedItem();
+
+				var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[selectedItem].objectID()) : getObjectsWithStyleID(styles[selectedItem].objectID());
+
+				var subviews = layerListContent.subviews();
+
+				for (var i = subviews.length - 1; i >= 0; --i) {
+					subviews[i].removeFromSuperview();
+				}
+
+				var layerListCount = 0;
+
+				for (var i = 0; i < objectsWithStyleID.length; i++) {
+					layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
+
+					layerListCount++;
+				}
+
+				layerListContent.frame = NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight);
+
+				matchCount.setStringValue("Matches: " + objectsWithStyleID.length);
+
+				if (objectsWithStyleID.length == 0) {
+					removeStyleButton.setEnabled(1);
+				} else {
+					removeStyleButton.setEnabled(0);
+				}
+			}
+		})
+	});
+
+	styleList.setDelegate(styleListDelegate.getClassInstance());
+
+	var objectsWithStyleID = (sketch.version.sketch < 52) ? getObjectsWithStyleIDOld(styles[0].objectID()) : getObjectsWithStyleID(styles[0].objectID());
+
+	settingY = CGRectGetMaxY(alertContent.subviews().lastObject().frame()) + settingPad;
+
+	var layerList = createScrollView(NSMakeRect(0,settingY,contentFrameWidth,layerStyleHeight * layerStylesVisible)),
+		layerListContent = createContentView(NSMakeRect(0,0,layerStyleWidth,objectsWithStyleID.length*layerStyleHeight)),
+		layerListCount = 0;
+
+	for (var i = 0; i < objectsWithStyleID.length; i++) {
+		layerListContent.addSubview(createListItem(objectsWithStyleID[i],NSMakeRect(0,layerStyleHeight*layerListCount,layerStyleWidth,layerStyleHeight)));
+
+		layerListCount++;
+	}
+
+	layerList.setBackgroundColor(NSColor.whiteColor());
+	layerList.setDocumentView(layerListContent);
+
+	alertContent.addSubview(layerList);
+
+	settingY = CGRectGetMaxY(alertContent.subviews().lastObject().frame()) + settingPad;
+
+	var matchCount = createMatchText("Matches: " + objectsWithStyleID.length,NSMakeRect(0,settingY,alertWidth,18));
+	alertContent.addSubview(matchCount);
+
+	alertContent.frame = NSMakeRect(0,0,alertWidth,CGRectGetMaxY(matchCount.frame()));
+
+	alert.accessoryView = alertContent;
+
+	var closeButton = alert.addButtonWithTitle("Close");
+	var removeStyleButton = alert.addButtonWithTitle("Remove Style");
+
+	if (objectsWithStyleID.length == 0) {
+		removeStyleButton.setEnabled(1);
+	} else {
+		removeStyleButton.setEnabled(0);
+	}
+
+	var alertResponse = alert.runModal();
+
+	if (!debugMode) googleAnalytics(context,"find","run");
+
+	if (alertResponse == 1000) {
+		// Do something
+	} else if (alertResponse == 1001) {
+		var document = sketch.getSelectedDocument(),
+			selectedItem = styleList.indexOfSelectedItem(),
+			selectedStyle = styles[selectedItem],
+			selectedStyleSource;
+
+		if (document.getSharedLayerStyleWithID(selectedStyle.objectID())) {
+			selectedStyle = document.getSharedLayerStyleWithID(selectedStyle.objectID());
+			selectedStyleSource = MSDocument.currentDocument().documentData().layerStyles();
+		} else {
+			selectedStyle = document.getSharedTextStyleWithID(selectedStyle.objectID());
+			selectedStyleSource = MSDocument.currentDocument().documentData().layerTextStyles();
+		}
+
+		if (!selectedStyle.getAllInstancesLayers().length) {
+			if (selectedStyleSource.sharedStyleWithID) {
+				selectedStyleSource.removeSharedStyle(selectedStyleSource.sharedStyleWithID(selectedStyle.id));
+			} else {
+				selectedStyleSource.removeSharedStyle(selectedStyle);
+			}
+		}
+
+		NSApplication.sharedApplication().delegate().runPluginCommandWithIdentifier_fromBundleAtURL_context("find",context.command.pluginBundle().url(),context);
+	} else return false;
 }
 
 var report = function(context) {
@@ -226,10 +238,25 @@ function createField(string,frame) {
 
 	textField.setStringValue(string);
 	textField.setFont(NSFont.systemFontOfSize(11));
+	textField.setTextColor(NSColor.blackColor());
 	textField.setBezeled(0);
 	textField.setEditable(0);
 	textField.setDrawsBackground(0);
 	textField.setLineBreakMode(NSLineBreakByTruncatingTail);
+
+	return textField;
+}
+
+function createMatchText(string,frame) {
+	var textField = NSTextField.alloc().initWithFrame(frame),
+		textColor = (isUsingDarkTheme()) ? NSColor.lightGrayColor() : NSColor.darkGrayColor();
+
+	textField.setStringValue(string);
+	textField.setFont(NSFont.systemFontOfSize(11));
+	textField.setTextColor(textColor);
+	textField.setBezeled(0);
+	textField.setEditable(0);
+	textField.setDrawsBackground(0);
 
 	return textField;
 }
@@ -272,9 +299,10 @@ function createLabel(string,frame) {
 
 	textLabel.setStringValue(string);
 	textLabel.setFont(NSFont.systemFontOfSize(9));
-	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
+	textLabel.setTextColor(NSColor.lightGrayColor());
 	textLabel.setBezeled(0);
 	textLabel.setEditable(0);
+	textLabel.setBackgroundColor(NSColor.whiteColor());
 
 	return textLabel;
 }
@@ -307,8 +335,8 @@ function createScrollView(frame) {
 	return view;
 }
 
-function createSegmentedControl(items) {
-	var segControl = NSSegmentedControl.alloc().initWithFrame(NSMakeRect(0,0,300,24));
+function createSegmentedControl(items,frame) {
+	var segControl = NSSegmentedControl.alloc().initWithFrame(frame);
 
 	segControl.setSegmentCount(items.length);
 
@@ -402,23 +430,30 @@ function getObjectsWithStyleIDOld(styleID) {
 	return objectsWithStyleID;
 }
 
-function getStyleNames(source) {
-	var styleNames = [];
-
-	for (var i = 0; i < source.length; i++) {
-		styleNames.push(String(source[i].name()));
-	}
-
-	return styleNames;
-}
-
 function getSharedStyles(type) {
-	var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
+	if (sketch.version.sketch < 51) {
+		var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
+	} else {
+		var styles = (type == 0) ? MSDocument.currentDocument().documentData().allLayerStyles() : MSDocument.currentDocument().documentData().allTextStyles();
+	}
 
 	var sortByName = NSSortDescriptor.sortDescriptorWithKey_ascending("name",1);
 	styles = styles.sortedArrayUsingDescriptors([sortByName]);
 
 	return styles;
+}
+
+function getStyleNames(source) {
+	var styleNames = [];
+
+	for (var i = 0; i < source.length; i++) {
+		var styleLibrary = AppController.sharedInstance().librariesController().libraryForShareableObject(source[i]),
+			styleName = (styleLibrary) ? source[i].name() + " [" + styleLibrary.name() + "]" : source[i].name();
+
+		styleNames.push(String(styleName));
+	}
+
+	return styleNames;
 }
 
 function getUnusedStyles(type) {
@@ -501,6 +536,10 @@ function googleAnalytics(context,category,action,label,value) {
 		task = session.dataTaskWithURL(NSURL.URLWithString(NSString.stringWithString(url)));
 
 	task.resume();
+}
+
+function isUsingDarkTheme() {
+	return (NSUserDefaults.standardUserDefaults().stringForKey("AppleInterfaceStyle") == "Dark") ? true : false;
 }
 
 function openUrl(url) {

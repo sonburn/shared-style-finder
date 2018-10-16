@@ -6,15 +6,15 @@
 		<description>Find instances of a shared layer or text style.</description>
 		<language>en</language>
 		<item>
-			<title>Version 0.7</title>
+			<title>Version 1.0</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Added option to remove a style if it's unused.</li>
+				<li>Now includes library styles, improved support for dark mode, and a wider panel for better label viewing.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="0.7" />
+			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="1.0" />
 		</item>
 	</channel>
 </rss>
