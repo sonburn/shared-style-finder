@@ -4,11 +4,11 @@
 		{
 			"name" : "Shared Style Finder",
 			"shortcut" : "cmd option shift f",
-			"identifier" : "find",
+			"identifier" : "showFinder",
 			"description" : "Find instances of a shared layer or text style.",
 			"script" : "script.cocoascript",
 			"icon" : "icon-sr.png",
-			"handler" : "find"
+			"handler" : "showFinder"
 		},
 		{
 			"name": "Report Issue",
@@ -26,14 +26,14 @@
 	"menu" : {
 		"title" : "Shared Style Finder",
 		"items" : [
-			"find",
+			"showFinder",
 			"-",
 			"report",
 			"donate"
 		]
 	},
 	"identifier" : "com.sonburn.sketchplugins.shared-style-finder",
-	"version" : "1.0",
+	"version" : "1.1",
 	"description" : "Find instances of a shared layer or text style.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Shared Style Finder",

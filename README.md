@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.1** - Library style solution broke Sketch 51, so library styles now only shown for Sketch 52.
 * **1.0** - Now includes library styles, improved support for dark mode, and a wider panel for better label viewing.
 * **0.7** - Added option to remove a style if it's unused.
 * **0.6** - Fix for Sketch 52 changes to styles.

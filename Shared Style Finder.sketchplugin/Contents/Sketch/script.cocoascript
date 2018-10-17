@@ -11,7 +11,7 @@ var layerStyles = getSharedStyles(0),
 	styleNames,
 	uiButtons = [];
 
-var find = function(context) {
+var showFinder = function(context) {
 	if (!layerStyles.length && !textStyles.length) {
 		displayDialog("This document has no shared styles.",pluginName);
 		return;
@@ -431,7 +431,7 @@ function getObjectsWithStyleIDOld(styleID) {
 }
 
 function getSharedStyles(type) {
-	if (sketch.version.sketch < 51) {
+	if (sketch.version.sketch < 52) {
 		var styles = (type == 0) ? MSDocument.currentDocument().documentData().layerStyles().objects() : MSDocument.currentDocument().documentData().layerTextStyles().objects();
 	} else {
 		var styles = (type == 0) ? MSDocument.currentDocument().documentData().allLayerStyles() : MSDocument.currentDocument().documentData().allTextStyles();
