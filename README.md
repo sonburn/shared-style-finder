@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.2** - Fix for Sketch 53.
 * **1.1** - Library style solution broke Sketch 51, so library styles now only shown for Sketch 52.
 * **1.0** - Now includes library styles, improved support for dark mode, and a wider panel for better label viewing.
 * **0.7** - Added option to remove a style if it's unused.
@@ -59,4 +60,4 @@ If you find this plugin helpful, or would like to support my plugins in general,
 
 # License
 
-Copyright (c) 2018 Jason Burns (Sonburn). See LICENSE.md for further details.
+Copyright (c) 2019 Jason Burns (Sonburn). See LICENSE.md for further details.

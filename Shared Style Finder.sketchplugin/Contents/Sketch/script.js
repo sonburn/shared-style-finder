@@ -1,4 +1,4 @@
-@import "MochaJSDelegate.js";
+@import "delegate.js";
 
 var sketch = require("sketch"),
 	pluginName = "Shared Style Finder",
@@ -11,7 +11,7 @@ var layerStyles = getSharedStyles(0),
 	styleNames,
 	uiButtons = [];
 
-var showFinder = function(context) {
+var find = function(context) {
 	if (!layerStyles.length && !textStyles.length) {
 		displayDialog("This document has no shared styles.",pluginName);
 		return;
@@ -182,6 +182,12 @@ var report = function(context) {
 	openUrl("https://github.com/sonburn/shared-style-finder/issues/new");
 
 	if (!debugMode) googleAnalytics(context,"report","report");
+}
+
+var plugins = function(context) {
+	openUrl("https://sonburn.github.io/");
+
+	if (!debugMode) googleAnalytics(context,"plugins","plugins");
 }
 
 var donate = function(context) {
@@ -385,7 +391,7 @@ function createTargetArea(instance,frame) {
 		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
 		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
-		instance.select_byExpandingSelection(true,false);
+		instance.select_byExtendingSelection(1,0);
 	});
 
 	return targetArea;
@@ -405,7 +411,7 @@ function getObjectsWithStyleID(styleID) {
 	var objectsWithStyleID = NSMutableArray.array();
 
 	styleInstances.forEach(function(style){
-		objectsWithStyleID.addObject(style.getParentLayer());
+		objectsWithStyleID.addObject(style.getParentLayer().sketchObject);
 	});
 
 	return objectsWithStyleID;

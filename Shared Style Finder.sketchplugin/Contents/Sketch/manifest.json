@@ -1,43 +1,48 @@
 {
+	"name" : "Shared Style Finder",
+	"description" : "Find instances of a shared layer or text style.",
 	"author" : "Jason Burns",
+	"homepage" : "https://github.com/sonburn/shared-style-finder",
+	"version" : "1.2",
+	"identifier" : "com.sonburn.sketchplugins.shared-style-finder",
+	"appcast" : "https://raw.githubusercontent.com/sonburn/shared-style-finder/master/appcast.xml",
+	"icon" : "icon.png",
 	"commands" : [
 		{
 			"name" : "Shared Style Finder",
 			"shortcut" : "cmd option shift f",
-			"identifier" : "showFinder",
+			"identifier" : "find",
 			"description" : "Find instances of a shared layer or text style.",
-			"script" : "script.cocoascript",
-			"icon" : "icon-sr.png",
-			"handler" : "showFinder"
+			"script" : "script.js",
+			"handler" : "find"
 		},
 		{
 			"name": "Report Issue",
 			"identifier": "report",
-			"script" : "script.cocoascript",
+			"script" : "script.js",
 			"handler": "report"
+		},
+		{
+			"name": "Other Plugins",
+			"identifier": "plugins",
+			"script" : "script.js",
+			"handler": "plugins"
 		},
 		{
 			"name": "Donate",
 			"identifier": "donate",
-			"script" : "script.cocoascript",
+			"script" : "script.js",
 			"handler": "donate"
 		}
 	],
 	"menu" : {
 		"title" : "Shared Style Finder",
 		"items" : [
-			"showFinder",
+			"find",
 			"-",
 			"report",
+			"plugins",
 			"donate"
 		]
-	},
-	"identifier" : "com.sonburn.sketchplugins.shared-style-finder",
-	"version" : "1.1",
-	"description" : "Find instances of a shared layer or text style.",
-	"authorEmail" : "jason.burns@synchronoss.com",
-	"name" : "Shared Style Finder",
-	"icon" : "icon.png",
-	"appcast" : "https://raw.githubusercontent.com/sonburn/shared-style-finder/master/appcast.xml",
-	"homepage" : "https://github.com/sonburn/shared-style-finder"
+	}
 }

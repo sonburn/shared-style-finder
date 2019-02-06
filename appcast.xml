@@ -6,15 +6,15 @@
 		<description>Find instances of a shared layer or text style.</description>
 		<language>en</language>
 		<item>
-			<title>Version 1.1</title>
+			<title>Version 1.2</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Library style solution broke Sketch 51, so library styles now only shown for Sketch 52.</li>
+				<li>Fix for Sketch 53.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="1.1" />
+			<enclosure url="https://github.com/sonburn/shared-style-finder/archive/master.zip" sparkle:version="1.2" />
 		</item>
 	</channel>
 </rss>
