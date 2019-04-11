@@ -12,31 +12,34 @@
 			"name" : "Shared Style Finder",
 			"shortcut" : "cmd option shift f",
 			"identifier" : "find",
-			"icon": "icon.png",
 			"description" : "Find instances of a shared layer or text style.",
+			"icon" : "icon.png",
 			"script" : "script.js",
 			"handler" : "find"
 		},
 		{
-			"name": "Report Issue",
-			"identifier": "report",
-			"icon": "icon.png",
+			"name" : "Report Issue",
+			"identifier" : "report",
+			"description" : "Report an issue with Shared Style Finder.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "report"
+			"handler" : "report"
 		},
 		{
-			"name": "Other Plugins",
-			"identifier": "plugins",
-			"icon": "icon.png",
+			"name" : "Other Plugins",
+			"identifier" : "plugins",
+			"description" : "View all of Sonburn's plugins.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "plugins"
+			"handler" : "plugins"
 		},
 		{
-			"name": "Donate",
-			"identifier": "donate",
-			"icon": "icon.png",
+			"name" : "Donate",
+			"identifier" : "donate",
+			"description" : "Donate to the development of Shared Style Finder.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "donate"
+			"handler" : "donate"
 		}
 	],
 	"menu" : {
